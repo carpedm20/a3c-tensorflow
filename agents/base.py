@@ -1,5 +1,9 @@
-import queue
 import tensorflow as tf
+
+try:
+  import queue
+except:
+  from six.moves import queue
 
 class BaseAgent(object):
   def __init__(self, model_fn, env, task):

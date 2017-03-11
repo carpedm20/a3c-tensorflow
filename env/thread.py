@@ -1,6 +1,10 @@
-import queue
 import threading
 import tensorflow as tf
+
+try:
+  import queue
+except:
+  from six.moves import queue
 
 class PartialRollout(object):
   def __init__(self):
