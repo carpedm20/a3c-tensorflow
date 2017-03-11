@@ -63,7 +63,7 @@ def create_commands(
   for task_name, task_ips in local_def.items():
     for idx, _ in enumerate(task_ips):
       task_arg = [
-          '--job_name', task_name, '--task_id', start_task_id + idx,
+          '--job_name', task_name, '--task', start_task_id + idx,
           #'--load_path', get_load_path((start_task_id + idx) % int(math.sqrt(num_worker)))]
           '--load_path', get_load_path(start_task_id + idx)]
       cmds_map += [

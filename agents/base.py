@@ -1,12 +1,13 @@
+import queue
 import tensorflow as tf
 
 class BaseAgent(object):
   def __init__(self, model_fn, env, task):
     self.env = env
     self.task = task
-    worker_device = "/job:worker/task:{}/cpu:0".format(task)
+    self.worker_device = "/job:worker/task:{}/cpu:0".format(task)
 
-    with tf.device(tf.train.replica_device_setter(1, worker_device=worker_device)):
+    with tf.device(tf.train.replica_device_setter(1, worker_device=self.worker_device)):
       with tf.variable_scope("global"):
         self.network = model_fn()
         self.global_step = tf.get_variable(
@@ -14,29 +15,26 @@ class BaseAgent(object):
             initializer=tf.constant_initializer(0, dtype=tf.int32),
             trainable=False)
 
-    with tf.device(worker_device):
+    with tf.device(self.worker_device):
       with tf.variable_scope("local"):
-        self.local_network = pi = model_fn()
-        pi.global_step = self.global_step
-
-      if self.use_advantage:
-        self.adv = tf.placeholder(tf.float32, [None], name="adv")
+        self.local_network = model_fn()
+        self.local_network.global_step = self.global_step
 
       self.ac = tf.placeholder(tf.float32, [None, env.action_space.n], name="ac")
       self.r = tf.placeholder(tf.float32, [None], name="r")
 
   def build_shared_grad(self):
-    grads = tf.gradients(self.loss, pi.var_list)
+    self.grads = tf.gradients(self.loss, self.local_network.var_list)
 
     self.build_summary()
 
-    grads, _ = tf.clip_by_global_norm(grads, 40.0)
+    clipped_grads, _ = tf.clip_by_global_norm(self.grads, 40.0)
 
     # copy weights from the parameter server to the local model
-    self.sync = tf.group(*[v1.assign(v2) for v1, v2 in zip(pi.var_list, self.network.var_list)])
+    self.sync = tf.group(*[v1.assign(v2) for v1, v2 in zip(self.local_network.var_list, self.network.var_list)])
 
-    grads_and_vars = list(zip(grads, self.network.var_list))
-    inc_step = self.global_step.assign_add(tf.shape(pi.x)[0])
+    grads_and_vars = list(zip(clipped_grads, self.network.var_list))
+    inc_step = self.global_step.assign_add(tf.shape(self.local_network.x)[0])
 
     # each worker has a different set of adam optimizer parameters
     opt = tf.train.AdamOptimizer(1e-4)
@@ -45,14 +43,14 @@ class BaseAgent(object):
     self.local_steps = 0
 
   def start(self, sess, summary_writer):
-    self.runner.start_runner(sess, summary_writer)
+    self.env.runner.start_runner(sess, self.local_network, summary_writer)
     self.summary_writer = summary_writer
 
   def pull_batch_from_queue(self):
-    rollout = self.runner.queue.get(timeout=600.0)
+    rollout = self.env.runner.queue.get(timeout=600.0)
     while not rollout.terminal:
       try:
-        rollout.extend(self.runner.queue.get_nowait())
+        rollout.extend(self.env.runner.queue.get_nowait())
       except queue.Empty:
         break
     return rollout
@@ -60,7 +58,7 @@ class BaseAgent(object):
   def process(self, sess):
     sess.run(self.sync)  # copy weights from shared to local
     rollout = self.pull_batch_from_queue()
-    batch = process_rollout(rollout, gamma=0.99, lambda_=1.0)
+    batch = self.process_rollout(rollout, gamma=0.99, lambda_=1.0)
 
     should_compute_summary = self.task == 0 and self.local_steps % 11 == 0
 
@@ -86,11 +84,16 @@ class BaseAgent(object):
     self.local_steps += 1
 
   def build_summary(self):
-    tf.summary.scalar("model/policy_loss", pi_loss / bs)
-    tf.summary.scalar("model/value_loss", vf_loss / bs)
-    tf.summary.scalar("model/entropy", entropy / bs)
-    tf.summary.image("model/state", pi.x)
-    tf.summary.scalar("model/grad_global_norm", tf.global_norm(grads))
-    tf.summary.scalar("model/var_global_norm", tf.global_norm(pi.var_list))
+    bs = tf.to_float(tf.shape(self.local_network.x)[0])
+
+    tf.summary.scalar("model/policy_loss", self.pi_loss / bs)
+    tf.summary.scalar("model/value_loss", self.vf_loss / bs)
+    tf.summary.scalar("model/entropy", self.entropy / bs)
+    tf.summary.image("model/state", self.local_network.x)
+    tf.summary.scalar("model/grad_global_norm", tf.global_norm(self.grads))
+    tf.summary.scalar("model/var_global_norm", tf.global_norm(self.local_network.var_list))
 
     self.summary_op = tf.summary.merge_all()
+
+  def process_rollout(self, rollout):
+    raise Exception("Not implemented yet")

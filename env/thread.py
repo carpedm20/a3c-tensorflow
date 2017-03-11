@@ -1,3 +1,7 @@
+import queue
+import threading
+import tensorflow as tf
+
 class PartialRollout(object):
   def __init__(self):
     self.states = []
@@ -27,20 +31,20 @@ class PartialRollout(object):
     self.features.extend(other.features)
 
 class RunnerThread(threading.Thread):
-  def __init__(self, env, policy, num_local_steps, visualise):
+  def __init__(self, env, num_local_steps, visualise=False):
     threading.Thread.__init__(self)
     self.queue = queue.Queue(5)
     self.num_local_steps = num_local_steps
     self.env = env
     self.last_features = None
-    self.policy = policy
     self.daemon = True
     self.sess = None
     self.summary_writer = None
     self.visualise = visualise
 
-  def start_runner(self, sess, summary_writer):
+  def start_runner(self, sess, policy, summary_writer):
     self.sess = sess
+    self.policy = policy
     self.summary_writer = summary_writer
     self.start()
 
