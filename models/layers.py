@@ -1,6 +1,13 @@
 import numpy as np
 import tensorflow as tf
 
+def build_conv(inputs, kernel_dims, kernel_size, strides, scope, reuse=False):
+  with tf.variable_scope(scope, reuse=reuse):
+    layer = inputs
+    for idx, (k_dim, k_size, stride) in enumerate(zip(kernel_dims, kernel_size, strides)):
+      layer = tf.nn.elu(conv2d(inputs, k_dim, "conv{}".format(idx + 1), k_size, stride, reuse=reuse))
+  return layer
+
 def normalized_columns_initializer(std=1.0):
   def _initializer(shape, dtype=None, partition_info=None):
     out = np.random.randn(*shape).astype(np.float32)
