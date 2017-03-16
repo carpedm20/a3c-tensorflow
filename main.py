@@ -12,6 +12,8 @@ from config import get_config
 from utils import cluster_spec
 from env.atari import create_env
 
+from utils import prepare_dirs_and_logger
+
 config = None
 
 def shutdown(signal, frame):
@@ -19,6 +21,8 @@ def shutdown(signal, frame):
   sys.exit(128 + signal) # because we already hooked
 
 def main(_):
+  prepare_dirs_and_logger(config)
+
   spec = cluster_spec(config.num_workers, 1)
   cluster = tf.train.ClusterSpec(spec).as_cluster_def()
 
@@ -31,10 +35,10 @@ def main(_):
         cluster, job_name="worker", task_index=config.task,
         config=tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=2))
 
-    env = create_env(config.env_id, client_id=str(config.task), remotes=config.remotes)
+    env = create_env(config.env_name, client_id=str(config.task))
     model_fn = lambda: get_model(config)(env.observation_space.shape, env.action_space.n)
     agent = get_agent(config)(model_fn, env, config.task)
-    trainer = Trainer(agent, env, server, config.task, config.log_dir)
+    trainer = Trainer(agent, env, server, config.task, config.base_dir)
 
     if config.is_train:
       trainer.train()

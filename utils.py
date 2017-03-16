@@ -101,12 +101,12 @@ def prepare_dirs_and_logger(config):
   logger.setLevel(tf.logging.INFO)
 
   if config.load_path:
-    if config.load_path.startswith(config.env):
+    if config.load_path.startswith(config.env_name):
       config.model_name = config.load_path
     else:
-      config.model_name = "{}_{}".format(config.env, config.load_path)
+      config.model_name = "{}_{}".format(config.env_name, config.load_path)
   else:
-    config.model_name = "{}_{}".format(config.env, get_time())
+    config.model_name = "{}_{}".format(config.env_name, get_time())
 
   config.base_dir = os.path.join(config.log_dir, config.model_name)
 
