@@ -15,6 +15,7 @@ parser.add_argument('--load_path', type=str, default='')
 parser.add_argument('--board_port', type=int, default=6006)
 parser.add_argument('--local_ip', type=str, default='127.0.0.1')
 parser.add_argument('--cluster_def_file', type=str, default='cluster.json')
+parser.add_argument('--env', type=str, default="PongDeterministic-v0")
 
 def new_cmd(session, name, cmd, monitor, log_dir, shell):
   if isinstance(cmd, (list, tuple)):
@@ -30,9 +31,7 @@ def new_cmd(session, name, cmd, monitor, log_dir, shell):
     return name, 'nohup {} -c {} >{}/{}.{}.out 2>&1 & echo kill $! >>{}/kill.sh'. \
         format(shell, shlex_quote(cmd), log_dir, session, name, log_dir)
 
-def create_commands(
-    config, session,
-    shell='bash', monitor='tmux', mode=2, board_port=6006):
+def create_commands(config, unparsed, session, shell='bash', monitor='tmux', mode=2, board_port=6006):
   log_dir = config.log_dir
 
   base_cmd = [
@@ -40,7 +39,7 @@ def create_commands(
       '--log_dir', log_dir,
       '--is_train', config.is_train,
       '--local_ip', config.local_ip,
-  ]
+  ] + unparsed
 
   time_str = get_time()
   def get_load_path(idx):
@@ -108,8 +107,8 @@ def create_commands(
   return cmds, notes
 
 def run():
-  args = parser.parse_args()
-  cmds, notes = create_commands(args, 'a3c')
+  args, unparsed = parser.parse_known_args()
+  cmds, notes = create_commands(args, unparsed, 'a3c')
 
   if args.dry_run:
     print('Dry-run mode due to -n flag, otherwise the following commands would be executed:')

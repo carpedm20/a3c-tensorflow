@@ -13,7 +13,6 @@ class Trainer(object):
     self.log_dir = log_dir
 
   def train(self):
-    # Variable names that start with "local" are not saved in checkpoints.
     variables_to_save = [v for v in tf.global_variables() if not v.name.startswith("local")]
     init_op = tf.variables_initializer(variables_to_save)
     init_all_op = tf.global_variables_initializer()
@@ -22,30 +21,28 @@ class Trainer(object):
 
     var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, tf.get_variable_scope().name)
     tf.logging.info('Trainable vars:')
-    for v in var_list:
-      tf.logging.info('  %s %s', v.name, v.get_shape())
+    slim.model_analyzer.analyze_vars(var_list, print_info=True)
 
     def init_fn(ses):
       tf.logging.info("Initializing all parameters.")
       ses.run(init_all_op)
 
-    sess_config = tf.ConfigProto(device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(self.task)])
-    logdir = os.path.join(self.log_dir, 'train')
+    sess_config = tf.ConfigProto(
+      device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(config.task)])
 
-    summary_writer = tf.summary.FileWriter(logdir + "_%d" % self.task)
-
-    tf.logging.info("Events directory: %s_%s", logdir, self.task)
-    sv = tf.train.Supervisor(is_chief=(self.task == 0),
-                logdir=logdir,
-                saver=saver,
-                summary_op=None,
-                init_op=init_op,
-                init_fn=init_fn,
-                summary_writer=summary_writer,
-                ready_op=tf.report_uninitialized_variables(variables_to_save),
-                global_step=self.agent.global_step,
-                save_model_secs=30,
-                save_summaries_secs=30)
+    summary_writer = tf.summary.FileWriter("{}_{}".format(config.base_dir, config.task))
+    tf.logging.info("Events directory: %s_%s", config.base_dir, config.task)
+    sv = tf.train.Supervisor(is_chief=(config.task == 0),
+                             logdir=config.base_dir,
+                             saver=saver,
+                             summary_op=None,
+                             init_op=init_op,
+                             init_fn=init_fn,
+                             summary_writer=summary_writer,
+                             ready_op=tf.report_uninitialized_variables(variables_to_save),
+                             global_step=trainer.global_step,
+                             save_model_secs=30,
+                             save_summaries_secs=30)
 
     num_global_steps = 100000000
 
