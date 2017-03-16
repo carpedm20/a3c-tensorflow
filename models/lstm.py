@@ -9,10 +9,15 @@ class LSTMPolicy(object):
   def __init__(self, ob_space, ac_space):
     self.x = x = tf.placeholder(tf.float32, [None] + list(ob_space))
 
-    x_conv = build_conv(inputs, kernel_dims, kernel_size, strides, scope, reuse=False)
+    kernel_dims = [16, 32]
+    kernel_size = [8, 4]
+    strides = [4, 2]
 
-    # introduce a "fake" batch dimension of 1 after flatten so that we can do LSTM over time dim
-    x = tf.expand_dims(flatten(x), [0])
+    # f_percept
+    conv_x = build_conv(x, kernel_dims, kernel_size, strides, scope, reuse=False)
+    enc_output = linear(conv_x, config.fc_dim, )
+
+    enc_out = tf.expand_dims(flatten(conv_x), [0])
 
     size = 256
     lstm = rnn.BasicLSTMCell(size, state_is_tuple=True)
@@ -29,16 +34,19 @@ class LSTMPolicy(object):
 
     state_in = rnn.LSTMStateTuple(c_in, h_in)
     lstm_outputs, lstm_state = tf.nn.dynamic_rnn(
-      lstm, x, initial_state=state_in, sequence_length=step_size,
+      lstm, enc_out, initial_state=state_in, sequence_length=step_size,
       time_major=False)
 
     lstm_c, lstm_h = lstm_state
-    x = tf.reshape(lstm_outputs, [-1, size])
-    self.logits = linear(x, ac_space, "action", normalized_columns_initializer(0.01))
-    self.vf = tf.reshape(linear(x, 1, "value", normalized_columns_initializer(1.0)), [-1])
+    lstm_outputs = tf.reshape(lstm_outputs, [-1, size])
     self.state_out = [lstm_c[:1, :], lstm_h[:1, :]]
+
+    self.logits = linear(lstm_outputs, ac_space, "action", normalized_columns_initializer(0.01))
+    self.vf = tf.reshape(linear(lstm_outputs, 1, "value", normalized_columns_initializer(1.0)), [-1])
+
     self.sample = categorical_sample(self.logits, ac_space)[0, :]
-    self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, tf.get_variable_scope().name)
+    self.var_list = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, tf.get_variable_scope().name)
 
   def get_initial_features(self):
     return self.state_init

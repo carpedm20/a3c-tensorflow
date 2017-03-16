@@ -15,7 +15,9 @@ def add_argument_group(name):
 # Network
 net_arg = add_argument_group('Network')
 net_arg.add_argument('--rnn_dim', type=int, default=256)
-net_arg.add_argument('--hidden_dim', type=int, default=256)
+net_arg.add_argument('--fc_dim', type=int, default=256)
+net_arg.add_argument('--activation_fn', type=str, default='elu', choices=['elu','relu'])
+net_arg.add_argument('--embedding_dim', type=int, default=16)
 net_arg.add_argument('--model_type', default='lstm')
 
 # Environmnet

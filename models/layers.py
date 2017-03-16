@@ -41,10 +41,15 @@ def conv2d(
               collections=collections)
     return tf.nn.conv2d(x, w, stride_shape, pad) + b
 
-def linear(x, size, name, initializer=None, bias_init=0):
-  w = tf.get_variable(name + "/w", [x.get_shape()[1], size], initializer=initializer)
-  b = tf.get_variable(name + "/b", [size], initializer=tf.constant_initializer(bias_init))
-  return tf.matmul(x, w) + b
+def linear(x, size, activation_fn, name, 
+           initializer=tf.contrib.layers.xavier_initializer(), bias_init=0):
+  with tf.variable_scope(name):
+    w = tf.get_variable("w", [x.get_shape()[1], size], initializer=initializer)
+    b = tf.get_variable("b", [size], initializer=tf.constant_initializer(bias_init))
+  out = tf.matmul(x, w) + b
+  if activation_fn is not None:
+    out = activation_fn(out)
+  return out
 
 def categorical_sample(logits, d):
   value = tf.squeeze(tf.multinomial(logits - tf.reduce_max(logits, [1], keep_dims=True), 1), [1])
