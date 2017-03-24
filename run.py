@@ -15,7 +15,6 @@ parser.add_argument('--load_path', type=str, default='')
 parser.add_argument('--board_port', type=int, default=6006)
 parser.add_argument('--local_ip', type=str, default='127.0.0.1')
 parser.add_argument('--cluster_def_file', type=str, default='cluster.json')
-parser.add_argument('--env', type=str, default="PongDeterministic-v0")
 
 def new_cmd(session, name, cmd, monitor, log_dir, shell):
   if isinstance(cmd, (list, tuple)):
@@ -41,16 +40,8 @@ def create_commands(config, unparsed, session, shell='bash', monitor='tmux', mod
       '--local_ip', config.local_ip,
   ] + unparsed
 
-  time_str = get_time()
-  def get_load_path(idx):
-    if config.load_path == '':
-      load_path = "{}-{}".format(time_str, idx)
-    else:
-      load_path = config.load_path
-    return load_path
-
-  cluster_def, local_def, start_task_id = build_cluster_def_from_file(
-      config.cluster_def_file, config.local_ip)
+  cluster_def, local_def, start_task_id = \
+      build_cluster_def_from_file(config.cluster_def_file, config.local_ip)
 
   num_ps = len(local_def['ps'])
   num_worker = len(local_def['worker'])
@@ -63,8 +54,7 @@ def create_commands(config, unparsed, session, shell='bash', monitor='tmux', mod
     for idx, _ in enumerate(task_ips):
       task_arg = [
           '--job_name', task_name, '--task', start_task_id + idx,
-          #'--load_path', get_load_path((start_task_id + idx) % int(math.sqrt(num_worker)))]
-          '--load_path', get_load_path(start_task_id + idx)]
+          '--load_path', get_time()]
       cmds_map += [
           new_cmd(session, 'w-%d' % screen_idx, base_cmd + task_arg,  monitor, log_dir, shell)]
       screen_idx += 1

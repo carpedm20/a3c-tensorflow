@@ -20,7 +20,7 @@ net_arg.add_argument('--model_type', default='lstm')
 
 # Environmnet
 env_arg = add_argument_group('Environmnet')
-env_arg.add_argument('--env', type=str, default='PongDeterministic-v0')
+env_arg.add_argument('--env_name', type=str, default='PongDeterministic-v0')
 env_arg.add_argument('--terminal_if_dead', type=str2bool, default=False)
 
 # Cluster
@@ -29,6 +29,7 @@ cluster_arg.add_argument('--job_name', type=str, default='worker', choices=['wor
 cluster_arg.add_argument('--task', type=int, default=0)
 cluster_arg.add_argument('--local_ip', type=str, default='127.0.0.1')
 cluster_arg.add_argument('--cluster_def_file', type=str, default="cluster.json")
+cluster_arg.add_argument('--num_workers', default=32, type=int, help='Number of workers')
 
 # Training / test parameters
 train_arg = add_argument_group('Training')

@@ -16,20 +16,12 @@ except:
   import cv2
   imresize = cv2.resize
 
-def create_env(env_id, client_id, remotes, **kwargs):
-  spec = gym.spec(env_id)
+def create_env(env_name, client_id):
+  spec = gym.spec(env_name)
+  return create_atari_env(env_name)
 
-  if spec.tags.get('flashgames', False):
-    return create_flash_env(env_id, client_id, remotes, **kwargs)
-  elif spec.tags.get('atari', False) and spec.tags.get('vnc', False):
-    return create_vncatari_env(env_id, client_id, remotes, **kwargs)
-  else:
-    # Assume atari.
-    assert "." not in env_id  # universe environments have dots in names.
-    return create_atari_env(env_id)
-
-def create_atari_env(env_id):
-  env = gym.make(env_id)
+def create_atari_env(env_name):
+  env = gym.make(env_name)
   env = Vectorize(env)
   env = AtariRescale42x42(env)
   env = DiagnosticsInfo(env)

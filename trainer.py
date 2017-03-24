@@ -1,16 +1,17 @@
 import os
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
 from utils import FastSaver
 
 class Trainer(object):
-  def __init__(self, agent, env, server, task, log_dir):
+  def __init__(self, agent, env, server, task, base_dir):
     self.env = env
     self.agent = agent
     self.server = server
 
     self.task = task
-    self.log_dir = log_dir
+    self.base_dir = base_dir
 
   def train(self):
     variables_to_save = [v for v in tf.global_variables() if not v.name.startswith("local")]
@@ -28,19 +29,19 @@ class Trainer(object):
       ses.run(init_all_op)
 
     sess_config = tf.ConfigProto(
-      device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(config.task)])
+      device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(self.task)])
 
-    summary_writer = tf.summary.FileWriter("{}_{}".format(config.base_dir, config.task))
-    tf.logging.info("Events directory: %s_%s", config.base_dir, config.task)
-    sv = tf.train.Supervisor(is_chief=(config.task == 0),
-                             logdir=config.base_dir,
+    summary_writer = tf.summary.FileWriter("{}_{}".format(self.base_dir, self.task))
+    tf.logging.info("Events directory: %s_%s", self.base_dir, self.task)
+    sv = tf.train.Supervisor(is_chief=(self.task == 0),
+                             logdir=self.base_dir,
                              saver=saver,
                              summary_op=None,
                              init_op=init_op,
                              init_fn=init_fn,
                              summary_writer=summary_writer,
                              ready_op=tf.report_uninitialized_variables(variables_to_save),
-                             global_step=trainer.global_step,
+                             global_step=self.agent.global_step,
                              save_model_secs=30,
                              save_summaries_secs=30)
 
