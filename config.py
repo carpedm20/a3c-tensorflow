@@ -18,8 +18,8 @@ net_arg.add_argument('--rnn_dim', type=int, default=256)
 net_arg.add_argument('--hidden_dim', type=int, default=256)
 net_arg.add_argument('--model_type', default='lstm')
 
-# Environmnet
-env_arg = add_argument_group('Environmnet')
+# Environment
+env_arg = add_argument_group('Environment')
 env_arg.add_argument('--env_name', type=str, default='PongDeterministic-v0')
 env_arg.add_argument('--terminal_if_dead', type=str2bool, default=False)
 
