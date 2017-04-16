@@ -20,7 +20,7 @@ net_arg.add_argument('--model_type', default='lstm')
 
 # Environmnet
 env_arg = add_argument_group('Environmnet')
-env_arg.add_argument('--env', type=str, default='PongDeterministic-v0')
+env_arg.add_argument('--env_id', type=str, default='PongDeterministic-v0')
 env_arg.add_argument('--terminal_if_dead', type=str2bool, default=False)
 
 # Cluster
@@ -54,6 +54,7 @@ misc_arg.add_argument('--output_dir', type=str, default='outputs')
 misc_arg.add_argument('--load_path', type=str, default='')
 misc_arg.add_argument('--debug', type=str2bool, default=False)
 misc_arg.add_argument('--random_seed', type=int, default=123)
+misc_arg.add_argument('--num_workers', type=int, default=8)
 
 def get_config():
   config, unparsed = parser.parse_known_args()

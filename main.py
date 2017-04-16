@@ -31,7 +31,7 @@ def main(_):
         cluster, job_name="worker", task_index=config.task,
         config=tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=2))
 
-    env = create_env(config.env_id, client_id=str(config.task), remotes=config.remotes)
+    env = create_env(config.env_id, client_id=str(config.task))
     model_fn = lambda: get_model(config)(env.observation_space.shape, env.action_space.n)
     agent = get_agent(config)(model_fn, env, config.task)
     trainer = Trainer(agent, env, server, config.task, config.log_dir)

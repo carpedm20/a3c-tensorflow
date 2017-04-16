@@ -1,5 +1,7 @@
 import os
 import tensorflow as tf
+slim = tf.contrib.slim
+
 
 from utils import FastSaver
 
@@ -28,19 +30,18 @@ class Trainer(object):
       ses.run(init_all_op)
 
     sess_config = tf.ConfigProto(
-      device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(config.task)])
+      device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(self.task)])
 
-    summary_writer = tf.summary.FileWriter("{}_{}".format(config.base_dir, config.task))
-    tf.logging.info("Events directory: %s_%s", config.base_dir, config.task)
-    sv = tf.train.Supervisor(is_chief=(config.task == 0),
-                             logdir=config.base_dir,
+    summary_writer = tf.summary.FileWriter("{}_{}".format(self.log_dir, self.task))
+    tf.logging.info("Events directory: %s_%s", self.log_dir, self.task)
+    sv = tf.train.Supervisor(is_chief=(self.task == 0),
+                             logdir=self.log_dir,
                              saver=saver,
                              summary_op=None,
                              init_op=init_op,
                              init_fn=init_fn,
                              summary_writer=summary_writer,
                              ready_op=tf.report_uninitialized_variables(variables_to_save),
-                             global_step=trainer.global_step,
                              save_model_secs=30,
                              save_summaries_secs=30)
 
