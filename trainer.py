@@ -26,7 +26,9 @@ class Trainer(object):
     slim.model_analyzer.analyze_vars(var_list, print_info=True)
 
     def init_fn(ses):
+      tf.logging.info("="*30)
       tf.logging.info("Initializing all parameters.")
+      tf.logging.info("="*30)
       ses.run(init_all_op)
 
     sess_config = tf.ConfigProto(
@@ -42,7 +44,7 @@ class Trainer(object):
                              init_fn=init_fn,
                              summary_writer=summary_writer,
                              ready_op=tf.report_uninitialized_variables(variables_to_save),
-                             save_model_secs=30,
+                             save_model_secs=600,
                              save_summaries_secs=30)
 
     num_global_steps = 100000000
