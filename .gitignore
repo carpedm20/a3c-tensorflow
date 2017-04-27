@@ -1,6 +1,6 @@
 # Data
 *.json
-logs
+logs*
 
 # Created by https://www.gitignore.io/api/macos,vim,python
 
