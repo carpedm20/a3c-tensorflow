@@ -6,9 +6,10 @@ except:
   from six.moves import queue
 
 class BaseAgent(object):
-  def __init__(self, model_fn, env, task):
+  def __init__(self, model_fn, env, config):
     self.env = env
-    self.task = task
+    self.config = config
+    self.task = config.task
     self.worker_device = "/job:worker/task:{}/cpu:0".format(task)
 
     with tf.device(tf.train.replica_device_setter(1, worker_device=self.worker_device)):
@@ -30,9 +31,7 @@ class BaseAgent(object):
   def build_shared_grad(self):
     self.grads = tf.gradients(self.loss, self.local_network.var_list)
 
-    self.build_summary()
-
-    clipped_grads, _ = tf.clip_by_global_norm(self.grads, 40.0)
+    clipped_grads, _ = tf.clip_by_global_norm(self.grads, self.config.max_grad_norm)
 
     # copy weights from the parameter server to the local model
     self.sync = tf.group(*[v1.assign(v2) for v1, v2 in zip(self.local_network.var_list, self.network.var_list)])
@@ -41,10 +40,16 @@ class BaseAgent(object):
     inc_step = self.global_step.assign_add(tf.shape(self.local_network.x)[0])
 
     # each worker has a different set of adam optimizer parameters
-    opt = tf.train.AdamOptimizer(1e-4)
+    self.lr = tf.train.exponential_decay(
+            self.config.lr_start, self.global_step, self.config.lr_decay_step,
+            self.config.lr_decay_rate, staircase=True, name='lr')
+
+    opt = tf.train.AdamOptimizer(self.lr)
     self.train_op = tf.group(opt.apply_gradients(grads_and_vars), inc_step)
     self.summary_writer = None
     self.local_steps = 0
+
+    self.build_summary()
 
   def start(self, sess, summary_writer):
     self.env.runner.start_runner(sess, self.local_network, summary_writer)
@@ -96,6 +101,7 @@ class BaseAgent(object):
     tf.summary.image("model/state", self.local_network.x)
     tf.summary.scalar("model/grad_global_norm", tf.global_norm(self.grads))
     tf.summary.scalar("model/var_global_norm", tf.global_norm(self.local_network.var_list))
+    tf.summary.scalar("model/lr", self.lr)
 
     self.summary_op = tf.summary.merge_all()
 

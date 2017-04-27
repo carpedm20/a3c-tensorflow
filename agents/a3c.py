@@ -11,8 +11,8 @@ def discount(x, gamma):
   return scipy.signal.lfilter([1], [1, -gamma], x[::-1], axis=0)[::-1]
 
 class A3C(BaseAgent):
-  def __init__(self, model_fn, env, task):
-    super(A3C, self).__init__(model_fn, env, task)
+  def __init__(self, model_fn, env, config):
+    super(A3C, self).__init__(model_fn, env, config)
 
     pi = self.local_network
 

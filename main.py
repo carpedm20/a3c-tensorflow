@@ -33,7 +33,7 @@ def main(_):
 
     env = create_env(config.env_id, client_id=str(config.task))
     model_fn = lambda: get_model(config)(env.observation_space.shape, env.action_space.n)
-    agent = get_agent(config)(model_fn, env, config.task)
+    agent = get_agent(config)(model_fn, env, config)
     trainer = Trainer(agent, env, server, config.task, config.log_dir)
 
     if config.is_train:

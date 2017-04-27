@@ -37,10 +37,10 @@ train_arg.add_argument('--is_train', type=str2bool, default=True)
 train_arg.add_argument('--random_initialize', type=str2bool, default=True)
 train_arg.add_argument('--optimizer', type=str, default='rmsprop')
 train_arg.add_argument('--max_global_step', type=int, default=100000000)
-train_arg.add_argument('--lr_start', type=float, default=0.001)
-train_arg.add_argument('--lr_decay_step', type=int, default=5000)
+train_arg.add_argument('--lr_start', type=float, default=1e-4)
+train_arg.add_argument('--lr_decay_step', type=int, default=5000000)
 train_arg.add_argument('--lr_decay_rate', type=float, default=1, help='1 means no lr decay')
-train_arg.add_argument('--max_grad_norm', type=float, default=2.0)
+train_arg.add_argument('--max_grad_norm', type=float, default=40)
 train_arg.add_argument('--max_local_step', type=int, default=20)
 
 # Misc
